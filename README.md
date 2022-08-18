@@ -1,2 +1,3 @@
-# rectfault
-Surface deformation due to a rectangular fault in a homogeneous elastic half space by Okada (1992) for Golang
+# Rectangular fault model in Go
+Golang implementation of Surface deformation due to a rectangular fault in a homogeneous elastic half space (Okada, 1992)
+
