@@ -106,8 +106,8 @@ func chinneryParams(x, y, z, c, dip, l, w float64) (v [4]okadaVars) {
 func chinnerys(f funcType, a, y, z, c, dip, l, w float64, v [4]okadaVars) (u1, u2, u3 float64) {
 	//cosd := math.Cos(dip)
 	//sind := math.Sin(dip)
-	cosd := v[0].Cosd
-	sind := v[0].Sind
+	cosd := v[0].Cosd // cosd is common in all v
+	sind := v[0].Sind // sind is common in all v
 
 	d := c - z
 	q := y*sind - d*cosd
