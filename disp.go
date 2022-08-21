@@ -9,10 +9,12 @@ var eps = math.Nextafter(1.0, 2.0) - 1.0
 
 // okadaVars stores common values required to compute displacements due to a rectangular source
 type okadaVars struct {
+	Xi, Eta                 float64
 	R                       float64 // sqrt(xi^2+eta^2+p^2)
 	Yt, Dt, Ct              float64 // y-tilde, d-tilde, c-tilde
 	Theta                   float64 // atan(xi*eta/(q*R))
 	X                       float64 // xi^2+q^2
+	Cosd, Sind              float64 // cos(dip), sin(dip)
 	LnRpXi                  float64 // dlog(R+xi)
 	LnRpEta                 float64 // dlog(R+eta)
 	X11, Y11, X32, Y32, Z32 float64
@@ -45,7 +47,7 @@ func fbStrike(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
 	yt := v.Yt
 	dt := v.Dt
 	Y11 := v.Y11
-	sind := math.Sin(dip)
+	sind := v.Sind
 
 	f1 = -xi*q*Y11 - theta - (1.0-a)/a*I1(xi, eta, dip, q, v)*sind
 	f2 = -q/R + (1.0-a)/a*yt/(R+dt)*sind
@@ -58,8 +60,8 @@ func fcStrike(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
 	ct := v.Ct
 	Y11 := v.Y11
 	Z32 := v.Z32
-	cosd := math.Cos(dip)
-	sind := math.Sin(dip)
+	cosd := v.Cosd
+	sind := v.Sind
 	r3 := R * R * R
 
 	f1 = (1.0-a)*xi*Y11*cosd - a*xi*q*Z32
@@ -81,13 +83,12 @@ func faDip(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
 }
 
 func fbDip(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
-
 	theta := v.Theta
 	R := v.R
 	dt := v.Dt
 	X11 := v.X11
-	cosd := math.Cos(dip)
-	sind := math.Sin(dip)
+	cosd := v.Cosd
+	sind := v.Sind
 
 	f1 = -q/R + (1.0-a)/a*I3(xi, eta, dip, q, v)*sind*cosd
 	f2 = -eta*q*X11 - theta - (1.0-a)/a*xi/(R+dt)*sind*cosd
@@ -104,8 +105,8 @@ func fcDip(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
 	Y11 := v.Y11
 	X32 := v.X32
 	r3 := R * R * R
-	cosd := math.Cos(dip)
-	sind := math.Sin(dip)
+	cosd := v.Cosd
+	sind := v.Sind
 
 	f1 = (1.0-a)*cosd/R - q*Y11*sind - a*ct*q/r3
 	f2 = (1.0-a)*yt*X11 - a*ct*eta*q*X32
@@ -115,7 +116,6 @@ func fcDip(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
 
 func faTensile(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) {
 	theta := v.Theta
-	//R := v.R
 	lnRpXi := v.LnRpXi
 	lnRpEta := v.LnRpEta
 	X11 := v.X11
@@ -133,7 +133,7 @@ func fbTensile(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) 
 	dt := v.Dt
 	X11 := v.X11
 	Y11 := v.Y11
-	sind := math.Sin(dip)
+	sind := v.Sind
 
 	f1 = q*q*Y11 - (1.0-a)/a*I3(xi, eta, dip, q, v)*(sind*sind)
 	f2 = q*q*X11 + (1.0-a)/a*xi/(R+dt)*(sind*sind)
@@ -150,8 +150,8 @@ func fcTensile(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) 
 	Y11 := v.Y11
 	X32 := v.X32
 	Z32 := v.Z32
-	cosd := math.Cos(dip)
-	sind := math.Sin(dip)
+	cosd := v.Cosd
+	sind := v.Sind
 
 	f1 = -(1.0-a)*(sind/R+q*Y11*cosd) - a*(z*Y11-q*q*Z32)
 	f2 = (1.0-a)*2.0*xi*Y11*sind + dt*X11 - a*ct*(X11-q*q*X32)
@@ -178,8 +178,8 @@ func I3(xi, eta, dip, q float64, v okadaVars) float64 {
 	dt := v.Dt
 	yt := v.Yt
 	lnRpEta := v.LnRpEta
-	cosd := math.Cos(dip)
-	sind := math.Sin(dip)
+	cosd := v.Cosd
+	sind := v.Sind
 
 	// avoid singularity
 	if math.Abs(cosd) < eps {
@@ -195,9 +195,8 @@ func I4(xi, eta, dip, q float64, v okadaVars) float64 {
 	X := v.X
 	dt := v.Dt
 	yt := v.Yt
-
-	cosd := math.Cos(dip)
-	sind := math.Sin(dip)
+	cosd := v.Cosd
+	sind := v.Sind
 	rt := R + dt
 
 	// avoid singularity

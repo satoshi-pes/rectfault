@@ -4,28 +4,42 @@ import "math"
 
 func CalcDisp(a, x, y, z, c, dip, l, w, us, ud, ut float64) (ux, uy, uz float64, err error) {
 	var ua, uh, ub, uc [3]float64
+	var uxs, uys, uzs float64
+	var uxd, uyd, uzd float64
+	var uxt, uyt, uzt float64
+
+	// calculate parameters commonly used in Chinnery's operation
+	var vp, vm [4]okadaVars
+	vp = chinneryParams(x, y, z, c, dip, l, w)  // z = z
+	vm = chinneryParams(x, y, -z, c, dip, l, w) // z = -z
 
 	// displacements
 	// contribution of strike slip
-	ua[0], ua[1], ua[2] = chinnerys(faStrike, a, x, y, z, c, dip, l, w)
-	uh[0], uh[1], uh[2] = chinnerys(faStrike, a, x, y, -z, c, dip, l, w)
-	ub[0], ub[1], ub[2] = chinnerys(fbStrike, a, x, y, z, c, dip, l, w)
-	uc[0], uc[1], uc[2] = chinnerys(fcStrike, a, x, y, z, c, dip, l, w)
-	uxs, uys, uzs := uxyz(ua, uh, ub, uc, z, dip)
+	if us != 0. {
+		ua[0], ua[1], ua[2] = chinnerys(faStrike, a, y, z, c, dip, l, w, vp)
+		uh[0], uh[1], uh[2] = chinnerys(faStrike, a, y, -z, c, dip, l, w, vm)
+		ub[0], ub[1], ub[2] = chinnerys(fbStrike, a, y, z, c, dip, l, w, vp)
+		uc[0], uc[1], uc[2] = chinnerys(fcStrike, a, y, z, c, dip, l, w, vp)
+		uxs, uys, uzs = uxyz(ua, uh, ub, uc, z, dip)
+	}
 
 	// contribution of dip slip
-	ua[0], ua[1], ua[2] = chinnerys(faDip, a, x, y, z, c, dip, l, w)
-	uh[0], uh[1], uh[2] = chinnerys(faDip, a, x, y, -z, c, dip, l, w)
-	ub[0], ub[1], ub[2] = chinnerys(fbDip, a, x, y, z, c, dip, l, w)
-	uc[0], uc[1], uc[2] = chinnerys(fcDip, a, x, y, z, c, dip, l, w)
-	uxd, uyd, uzd := uxyz(ua, uh, ub, uc, z, dip)
+	if ud != 0. {
+		ua[0], ua[1], ua[2] = chinnerys(faDip, a, y, z, c, dip, l, w, vp)
+		uh[0], uh[1], uh[2] = chinnerys(faDip, a, y, -z, c, dip, l, w, vm)
+		ub[0], ub[1], ub[2] = chinnerys(fbDip, a, y, z, c, dip, l, w, vp)
+		uc[0], uc[1], uc[2] = chinnerys(fcDip, a, y, z, c, dip, l, w, vp)
+		uxd, uyd, uzd = uxyz(ua, uh, ub, uc, z, dip)
+	}
 
 	// contribution of tensile slip
-	ua[0], ua[1], ua[2] = chinnerys(faTensile, a, x, y, z, c, dip, l, w)
-	uh[0], uh[1], uh[2] = chinnerys(faTensile, a, x, y, -z, c, dip, l, w)
-	ub[0], ub[1], ub[2] = chinnerys(fbTensile, a, x, y, z, c, dip, l, w)
-	uc[0], uc[1], uc[2] = chinnerys(fcTensile, a, x, y, z, c, dip, l, w)
-	uxt, uyt, uzt := uxyz(ua, uh, ub, uc, z, dip)
+	if ut != 0. {
+		ua[0], ua[1], ua[2] = chinnerys(faTensile, a, y, z, c, dip, l, w, vp)
+		uh[0], uh[1], uh[2] = chinnerys(faTensile, a, y, -z, c, dip, l, w, vm)
+		ub[0], ub[1], ub[2] = chinnerys(fbTensile, a, y, z, c, dip, l, w, vp)
+		uc[0], uc[1], uc[2] = chinnerys(fcTensile, a, y, z, c, dip, l, w, vp)
+		uxt, uyt, uzt = uxyz(ua, uh, ub, uc, z, dip)
+	}
 
 	ux = us*uxs + ud*uxd + ut*uxt
 	uy = us*uys + ud*uyd + ut*uyt
@@ -34,8 +48,8 @@ func CalcDisp(a, x, y, z, c, dip, l, w, us, ud, ut float64) (ux, uy, uz float64,
 	return ux, uy, uz, nil
 }
 
-// chinnerys performs Chinnery's operation with the given function f.
-func chinnerys(f funcType, a, x, y, z, c, dip, l, w float64) (u1, u2, u3 float64) {
+// chinneryParams calculates parameters commonly used in Chinnery's operation
+func chinneryParams(x, y, z, c, dip, l, w float64) (v [4]okadaVars) {
 	cosd := math.Cos(dip)
 	sind := math.Sin(dip)
 
@@ -43,16 +57,15 @@ func chinnerys(f funcType, a, x, y, z, c, dip, l, w float64) (u1, u2, u3 float64
 	p := y*cosd + d*sind
 	q := y*sind - d*cosd
 
-	var xis, etas [4]float64
-	var v [4]okadaVars
-
-	xis[0], etas[0] = x, p
-	xis[1], etas[1] = x, p-w
-	xis[2], etas[2] = x-l, p
-	xis[3], etas[3] = x-l, p-w
+	v[0].Xi, v[0].Eta = x, p
+	v[1].Xi, v[1].Eta = x, p-w
+	v[2].Xi, v[2].Eta = x-l, p
+	v[3].Xi, v[3].Eta = x-l, p-w
 
 	for i := 0; i < 4; i++ {
-		xi, eta := xis[i], etas[i]
+		xi, eta := v[i].Xi, v[i].Eta
+		v[i].Cosd = cosd
+		v[i].Sind = sind
 		v[i].R = math.Sqrt(xi*xi + eta*eta + q*q)
 		v[i].Yt = eta*cosd + q*sind
 		v[i].Dt = eta*sind - q*cosd
@@ -86,11 +99,24 @@ func chinnerys(f funcType, a, x, y, z, c, dip, l, w float64) (u1, u2, u3 float64
 		}
 	}
 
+	return v
+}
+
+// chinnerys performs Chinnery's operation with the given function f.
+func chinnerys(f funcType, a, y, z, c, dip, l, w float64, v [4]okadaVars) (u1, u2, u3 float64) {
+	//cosd := math.Cos(dip)
+	//sind := math.Sin(dip)
+	cosd := v[0].Cosd
+	sind := v[0].Sind
+
+	d := c - z
+	q := y*sind - d*cosd
+
 	// perform Chinnery's operation:
 	// f = f(x, p) - f(x, p-W), - f(x-L, p) + f(x-L, p-W)
 	var f1, f2, f3 [4]float64
 	for i := 0; i < 4; i++ {
-		f1[i], f2[i], f3[i] = f(a, xis[i], etas[i], z, dip, q, v[i])
+		f1[i], f2[i], f3[i] = f(a, v[i].Xi, v[i].Eta, z, dip, q, v[i])
 	}
 	u1 = f1[0] - f1[1] - f1[2] + f1[3]
 	u2 = f2[0] - f2[1] - f2[2] + f2[3]
