@@ -163,14 +163,16 @@ func fcTensile(a, xi, eta, z, dip, q float64, v okadaVars) (f1, f2, f3 float64) 
 func I1(xi, eta, dip, q float64, v okadaVars) float64 {
 	R := v.R
 	dt := v.Dt
+	cosd, sind := v.Cosd, v.Sind
 
-	return -xi/(R+dt)*math.Cos(dip) - I4(xi, eta, dip, q, v)*math.Sin(dip)
+	return -xi/(R+dt)*cosd - I4(xi, eta, dip, q, v)*sind
 }
 
 func I2(xi, eta, dip, q float64, v okadaVars) float64 {
 	R := v.R
 	dt := v.Dt
-	return math.Log(R+dt) + I3(xi, eta, dip, q, v)*math.Sin(dip)
+	sind := v.Sind
+	return math.Log(R+dt) + I3(xi, eta, dip, q, v)*sind
 }
 
 func I3(xi, eta, dip, q float64, v okadaVars) float64 {
